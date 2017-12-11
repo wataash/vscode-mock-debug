@@ -53,8 +53,11 @@
 		"publish": "vsce publish"
 	},
 	"main": "./out/extension",
+	"// https://code.visualstudio.com/docs/extensionAPI/activation-events": "",
 	"activationEvents": [
+		"// activate() called when F5 pressed. Note that `Mock Debug` is not selected yet.",
 		"onDebug",
+		"// Substantially no meaning, since activate is called atmost one time, and already called by 'onDebug'.",
 		"onCommand:extension.mock-debug.getProgramName"
 	],
 	"contributes": {
@@ -65,16 +68,23 @@
 		],
 		"debuggers": [
 			{
+				"// type": "identifier",
 				"type": "mock",
 				"label": "Mock Debug",
 				"program": "./out/mockDebug.js",
 				"runtime": "node",
 				"configurationAttributes": {
 					"launch": {
+						"// No meaning? extension.ts can be loaded even if `program` omitted in launch.json.": "",
 						"required": [
 							"program"
 						],
 						"properties": {
+							"//": {
+								"type": "string",
+								"description": "completions in launch.json",
+								"default": "default value"
+							},
 							"program": {
 								"type": "string",
 								"description": "Absolute path to a text file.",
@@ -93,6 +103,8 @@
 						}
 					}
 				},
+				"// Template for initial launch.json": null,
+				"// Added when launch.json is missing && (Add configuration... (in debug pane) -> Mock Debug || >Debug: Open launch.json -> Mock Debug || >Debug: Start Debugging -> Mock Debug, when opening a non-markdown file)": null,
 				"initialConfigurations": [
 					{
 						"type": "mock",
@@ -102,6 +114,7 @@
 						"stopOnEntry": true
 					}
 				],
+				"// Added when select 'Add configuration...' -> 'Mock Debug' in debug pane": null,
 				"configurationSnippets": [
 					{
 						"label": "Mock Debug: Launch",
@@ -115,8 +128,11 @@
 						}
 					}
 				],
+				"// Affects registerCommand()": "",
 				"variables": {
-					"AskForProgramName": "extension.mock-debug.getProgramName"
+					"// Maps `${command:AskForProgramName}` to `extension.mock-debug.getProgramName`": "",
+					"AskForProgramName": "extension.mock-debug.getProgramName",
+					"foo": "bar"
 				}
 			}
 		]

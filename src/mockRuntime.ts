@@ -5,6 +5,28 @@
 import { readFileSync } from 'fs';
 import { EventEmitter } from 'events';
 
+/**
+ * "    at TCP.onconnection (net.js:1595:8)" -> "TCP.onconnection"
+ * "    at new MockRuntime (/Users/wsh/src/vscode-mock-debug/out/mockRuntime.js:29:9)\n"
+ *   -> "new MockRuntime"
+ */
+function stackLineToFunction(stackLine: string): string {
+	return stackLine.trim().split(' (')[0].slice(3);
+}
+
+export function mylog(msg: string): void {
+	const stack = new Error().stack;
+	// caller1 is mylog()
+	let caller2 = '???()';
+	let caller3 = '???()';
+	if (stack) {
+		const stackLines = stack.split('\n');
+		caller2 = stackLineToFunction(stackLines[2]) + '()';
+		caller3 = stackLineToFunction(stackLines[3]) + '()';
+	}
+	console.log(`${caller2} from ${caller3}: ${msg}`);
+}
+
 export interface MockBreakpoint {
 	id: number;
 	line: number;
@@ -19,6 +41,7 @@ export class MockRuntime extends EventEmitter {
 	// the initial (and one and only) file we are 'debugging'
 	private _sourceFile: string;
 	public get sourceFile() {
+		mylog('');
 		return this._sourceFile;
 	}
 
@@ -38,12 +61,14 @@ export class MockRuntime extends EventEmitter {
 
 	constructor() {
 		super();
+		mylog('');
 	}
 
 	/**
 	 * Start executing the given program.
 	 */
 	public start(program: string, stopOnEntry: boolean) {
+		mylog('');
 
 		this.loadSource(program);
 		this._currentLine = -1;
@@ -63,6 +88,7 @@ export class MockRuntime extends EventEmitter {
 	 * Continue execution to the end/beginning.
 	 */
 	public continue(reverse = false) {
+		mylog('');
 		this.run(reverse, undefined);
 	}
 
@@ -70,6 +96,7 @@ export class MockRuntime extends EventEmitter {
 	 * Step to the next/previous non empty line.
 	 */
 	public step(reverse = false, event = 'stopOnStep') {
+		mylog('');
 		this.run(reverse, event);
 	}
 
@@ -77,6 +104,7 @@ export class MockRuntime extends EventEmitter {
 	 * Returns a fake 'stacktrace' where every 'stackframe' is a word from the current line.
 	 */
 	public stack(startFrame: number, endFrame: number): any {
+		mylog('');
 
 		const words = this._sourceLines[this._currentLine].trim().split(/\s+/);
 
@@ -101,6 +129,7 @@ export class MockRuntime extends EventEmitter {
 	 * Set breakpoint in file with given line.
 	 */
 	public setBreakPoint(path: string, line: number) : MockBreakpoint {
+		// mylog('');
 
 		const bp = <MockBreakpoint> { verified: false, line, id: this._breakpointId++ };
 		let bps = this._breakPoints.get(path);
@@ -119,6 +148,7 @@ export class MockRuntime extends EventEmitter {
 	 * Clear breakpoint in file with given line.
 	 */
 	public clearBreakPoint(path: string, line: number) : MockBreakpoint | undefined {
+		mylog('');
 		let bps = this._breakPoints.get(path);
 		if (bps) {
 			const index = bps.findIndex(bp => bp.line === line);
@@ -135,12 +165,14 @@ export class MockRuntime extends EventEmitter {
 	 * Clear all breakpoints for file.
 	 */
 	public clearBreakpoints(path: string): void {
+		// mylog('');
 		this._breakPoints.delete(path);
 	}
 
 	// private methods
 
 	private loadSource(file: string) {
+		mylog('');
 		if (this._sourceFile !== file) {
 			this._sourceFile = file;
 			this._sourceLines = readFileSync(this._sourceFile).toString().split('\n');
@@ -152,6 +184,7 @@ export class MockRuntime extends EventEmitter {
 	 * If stepEvent is specified only run a single step and emit the stepEvent.
 	 */
 	private run(reverse = false, stepEvent?: string) {
+		mylog('');
 		if (reverse) {
 			for (let ln = this._currentLine-1; ln >= 0; ln--) {
 				if (this.fireEventsForLine(ln, stepEvent)) {
@@ -175,8 +208,12 @@ export class MockRuntime extends EventEmitter {
 	}
 
 	private verifyBreakpoints(path: string) : void {
+		// mylog('');
 		let bps = this._breakPoints.get(path);
-		if (bps) {
+		if (!bps) {
+			return;
+		}
+		if (bps) { // no meaning
 			this.loadSource(path);
 			bps.forEach(bp => {
 				if (!bp.verified && bp.line < this._sourceLines.length) {
@@ -206,6 +243,7 @@ export class MockRuntime extends EventEmitter {
 	 * Returns true is execution needs to stop.
 	 */
 	private fireEventsForLine(ln: number, stepEvent?: string): boolean {
+		mylog('');
 
 		const line = this._sourceLines[ln].trim();
 
@@ -251,6 +289,7 @@ export class MockRuntime extends EventEmitter {
 	}
 
 	private sendEvent(event: string, ... args: any[]) {
+		mylog('');
 		setImmediate(_ => {
 			this.emit(event, ...args);
 		});

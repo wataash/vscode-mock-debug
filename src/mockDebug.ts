@@ -10,7 +10,7 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { basename } from 'path';
-import { MockRuntime, MockBreakpoint } from './mockRuntime';
+import { MockRuntime, MockBreakpoint, mylog } from './mockRuntime';
 
 
 /**
@@ -44,6 +44,8 @@ class MockDebugSession extends LoggingDebugSession {
 	 */
 	public constructor() {
 		super("mock-debug.txt");
+
+		mylog('');
 
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false);
@@ -84,7 +86,11 @@ class MockDebugSession extends LoggingDebugSession {
 	 * to interrogate the features the debug adapter provides.
 	 */
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
+		mylog('');
 
+		logger.setup(Logger.LogLevel.Verbose, true);
+
+		// TODO: ?
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
 		// we request them early by sending an 'initializeRequest' to the frontend.
 		// The frontend will end the configuration sequence by calling 'configurationDone' request.
@@ -93,6 +99,7 @@ class MockDebugSession extends LoggingDebugSession {
 		// build and return the capabilities of this debug adapter:
 		response.body = response.body || {};
 
+		// TODO: ?
 		// the adapter implements the configurationDoneRequest.
 		response.body.supportsConfigurationDoneRequest = true;
 
@@ -107,8 +114,10 @@ class MockDebugSession extends LoggingDebugSession {
 
 	protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
 
+		mylog('');
+
 		// make sure to 'Stop' the buffered logging if 'trace' is not set
-		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+		// logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
 		// start the program in the runtime
 		this._runtime.start(args.program, !!args.stopOnEntry);
@@ -117,7 +126,9 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
+		mylog('');
 
+		// TODO: what if args.source.path is undefined?
 		const path = <string>args.source.path;
 		const clientLines = args.lines || [];
 
@@ -126,7 +137,10 @@ class MockDebugSession extends LoggingDebugSession {
 
 		// set and verify breakpoint locations
 		const actualBreakpoints = clientLines.map(l => {
-			let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
+			let a = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
+			let verified = a[0];
+			let line = a[1];
+			let id = a[2];
 			const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
 			bp.id= id;
 			return bp;
@@ -140,6 +154,7 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+		mylog('');
 
 		// runtime supports now threads so just return a default thread.
 		response.body = {
@@ -151,6 +166,7 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+		mylog('');
 
 		const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
 		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
@@ -166,6 +182,7 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+		mylog('');
 
 		const frameReference = args.frameId;
 		const scopes = new Array<Scope>();
@@ -179,6 +196,7 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
+		mylog('');
 
 		const variables = new Array<DebugProtocol.Variable>();
 		const id = this._variableHandles.get(args.variablesReference);
@@ -216,26 +234,31 @@ class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
+		mylog('');
 		this._runtime.continue();
 		this.sendResponse(response);
 	}
 
 	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
+		mylog('');
 		this._runtime.continue(true);
 		this.sendResponse(response);
  	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
+		mylog('');
 		this._runtime.step();
 		this.sendResponse(response);
 	}
 
 	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
+		mylog('');
 		this._runtime.step(true);
 		this.sendResponse(response);
 	}
 
 	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+		mylog('');
 
 		let reply: string | undefined = undefined;
 
@@ -272,6 +295,7 @@ class MockDebugSession extends LoggingDebugSession {
 	//---- helpers
 
 	private createSource(filePath: string): Source {
+		mylog('');
 		return new Source(basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'mock-adapter-data');
 	}
 }
