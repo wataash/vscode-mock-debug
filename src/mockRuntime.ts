@@ -89,7 +89,7 @@ export class MockRuntime extends EventEmitter {
 	 */
 	public continue(reverse = false) {
 		mylog('');
-		this.run(reverse, undefined);
+		this.run(reverse, unseined);
 	}
 
 	/**
